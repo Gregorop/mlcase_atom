@@ -1,4 +1,5 @@
 *.docx
 .vscode/
 aclImdb_v1/
-
+train_model opt1.py
+examp.py

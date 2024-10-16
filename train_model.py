@@ -44,6 +44,11 @@ train_size = int(0.8 * len(dataset))
 raw_train = dataset.take(train_size)
 raw_val = dataset.skip(train_size)
 
+batch_size = 32  # делаем батчи как в text_dataset_from_directory
+raw_train = raw_train.batch(batch_size)
+raw_val = raw_val.batch(batch_size)
+
+
 #параметры из гайда
 max_features = 20000 #количество слов учитываемых при обучении
 embedding_dim = 128 #каждое слово заменится на вектор из 128 интов
@@ -58,6 +63,24 @@ vectorize_layer = keras.layers.TextVectorization(
 
 text_ds = raw_train.map(lambda x, y: x) #взяли только строчки из датасета
 vectorize_layer.adapt(text_ds) #настраиваем словарь
+
+
+def vectorize_text(text, label):
+    text = tf.expand_dims(text, -1)
+    return vectorize_layer(text), label
+
+#применяем vectorize_layer на датасет
+train_ds = raw_train.map(vectorize_text)
+val_ds = raw_val.map(vectorize_text)
+#test_ds = raw_test.map(vectorize_text)
+
+
+
+#из гайда
+# Do async prefetching / buffering of the data for best performance on GPU.
+train_ds = train_ds.cache().prefetch(buffer_size=10)
+val_ds = val_ds.cache().prefetch(buffer_size=10)
+#test_ds = test_ds.cache().prefetch(buffer_size=10)
 
 
 from keras import layers
@@ -79,8 +102,12 @@ predictions = layers.Dense(10, activation="softmax", name="predictions")(x)
 
 model = keras.Model(inputs, predictions)
 
+
 #из гайда binary_crossentropy поменял на категории
 model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',  
               metrics=['accuracy'])
 
+epochs = 3
+
+model.fit(train_ds, validation_data=val_ds, epochs=epochs)
