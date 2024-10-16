@@ -21,8 +21,8 @@ def load_data(data_dir):
         class_dir = os.path.join(data_dir, class_name)
         if os.path.isdir(class_dir):
             for filename in os.listdir(class_dir):
-                #сразу нормализуем оценку от 0 до 10
-                score = int(filename[filename.find('_')+1])/10 
+                #вернул цифорку, чтобы сделать многоклассовую
+                score = int(filename[filename.find('_')+1])
                 file_path = os.path.join(class_dir, filename)
                 
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -59,13 +59,28 @@ vectorize_layer = keras.layers.TextVectorization(
 text_ds = raw_train.map(lambda x, y: x) #взяли только строчки из датасета
 vectorize_layer.adapt(text_ds) #настраиваем словарь
 
-sentence = "Soo cute movie, nice actors"
 
-# Преобразуем строку в тензор
-input_tensor = tf.constant([sentence])
+from keras import layers
+inputs = keras.Input(shape=(None,), dtype="int64")
 
-# Применяем слой векторизации
-vectorized_output = vectorize_layer(input_tensor)
+# количество слов на размер вектора для 1 слова
+x = layers.Embedding(max_features, embedding_dim)(inputs)
+x = layers.Dropout(0.5)(x)
 
-print(f"Original: {sentence}")
-print(f"Vectorized: {vectorized_output.numpy()}")
+x = layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
+x = layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
+x = layers.GlobalMaxPooling1D()(x)
+
+# всякие слои, пока оставил так
+x = layers.Dense(128, activation="relu")(x)
+x = layers.Dropout(0.5)(x)
+
+predictions = layers.Dense(10, activation="softmax", name="predictions")(x)
+
+model = keras.Model(inputs, predictions)
+
+#из гайда binary_crossentropy поменял на категории
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',  
+              metrics=['accuracy'])
+
