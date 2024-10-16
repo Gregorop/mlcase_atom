@@ -36,6 +36,7 @@ def load_data(data_dir):
 data_dir = 'aclImdb_v1/train'
 texts, labels = load_data(data_dir)
 
+
 # Преобразование в тензоры для tf, попарно склеиваем текст и оценку
 dataset = tf.data.Dataset.from_tensor_slices((texts, labels))
 
@@ -74,8 +75,6 @@ train_ds = raw_train.map(vectorize_text)
 val_ds = raw_val.map(vectorize_text)
 #test_ds = raw_test.map(vectorize_text)
 
-
-
 #из гайда
 # Do async prefetching / buffering of the data for best performance on GPU.
 train_ds = train_ds.cache().prefetch(buffer_size=10)
@@ -92,6 +91,7 @@ x = layers.Dropout(0.5)(x)
 
 x = layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
 x = layers.Conv1D(128, 7, padding="valid", activation="relu", strides=3)(x)
+
 x = layers.GlobalMaxPooling1D()(x)
 
 # всякие слои, пока оставил так
@@ -108,6 +108,5 @@ model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',  
               metrics=['accuracy'])
 
-epochs = 3
-
+epochs = 30
 model.fit(train_ds, validation_data=val_ds, epochs=epochs)
